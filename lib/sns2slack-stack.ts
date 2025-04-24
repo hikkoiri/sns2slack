@@ -1,20 +1,20 @@
-import * as cdk from '@aws-cdk/core';
-import * as sns from '@aws-cdk/aws-sns';
-import { SnsEventSource } from '@aws-cdk/aws-lambda-event-sources';
-import { NodejsFunction } from '@aws-cdk/aws-lambda-nodejs';
-import * as lambda from '@aws-cdk/aws-lambda';
-import * as path from 'path';
-
-export interface Sns2SlackStackProps extends cdk.StackProps {
-  slackWebhookUrl: string
-}
+import * as cdk from 'aws-cdk-lib';
+import { Construct } from 'constructs';
+import { Sns2SlackStackProps } from '../bin/sns2slack';
+import { Topic } from 'aws-cdk-lib/aws-sns';
+import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
+import { Runtime } from 'aws-cdk-lib/aws-lambda';
+import path = require('path');
+import { SnsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 
 export class Sns2SlackStack extends cdk.Stack {
-  constructor(scope: cdk.Construct, id: string, sns2SlackStackProps: Sns2SlackStackProps, props?: cdk.StackProps) {
+  constructor(scope: Construct, id: string, props: Sns2SlackStackProps) {
     super(scope, id, props);
 
-    const topic = new sns.Topic(this, 'NotificationTopic', {
-      displayName: 'Topic for notifications',
+
+    const topic = new Topic(this, 'sns-2-slack-notification-topic', {
+      displayName: 'Topic for Slack notifications',
+      topicName: 'sns-2-slack-notification-topic',
     });
 
     new cdk.CfnOutput(this, 'NotificationTopicARN', {
@@ -23,15 +23,15 @@ export class Sns2SlackStack extends cdk.Stack {
       exportName: 'NotificationTopicARN',
     });
 
-    const lambdaFunction = new NodejsFunction(this, 'NotificationConnectorLambda', {
-      runtime: lambda.Runtime.NODEJS_14_X,
+    const lambda = new NodejsFunction(this, 'sns-2-slack-connector-lambda', {
+      runtime: Runtime.NODEJS_20_X,
       handler: 'main',
-      entry: path.join(__dirname, `/../src/lambda/index.ts`),
+      entry: path.join(__dirname, `/../lambda/index.ts`),
       environment: {
-        SLACK_WEBHOOK_URL: sns2SlackStackProps.slackWebhookUrl,
+        SLACK_WEBHOOK_URL: props.slackWebhookUrl,
       },
     });
 
-    lambdaFunction.addEventSource(new SnsEventSource(topic));
+    lambda.addEventSource(new SnsEventSource(topic));
   }
 }

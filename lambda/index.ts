@@ -1,8 +1,8 @@
-import { APIGatewayProxyResultV2, SNSEvent } from 'aws-lambda';
-import fetch from 'node-fetch';
+import { SNSEvent } from "aws-lambda";
 
 
-export async function main(event: SNSEvent): Promise<APIGatewayProxyResultV2> {
+export async function main(event: SNSEvent): Promise<void> {
+
 
   //filter out important information
   const records = event.Records.map(record => {
@@ -34,6 +34,10 @@ export async function main(event: SNSEvent): Promise<APIGatewayProxyResultV2> {
 
 
   const url = process.env.SLACK_WEBHOOK_URL;
+  if (!url) {
+    throw new Error("SLACK_WEBHOOK_URL is not defined in the environment variables.");
+  }
+
   var headers = {
     "Content-type": "application/json"
   }
